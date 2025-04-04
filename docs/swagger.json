@@ -1,0 +1,101 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API para o MVP do SaaS para nutricionistas.",
+        "title": "API SaaS Nutri",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {
+        "/foods": {
+            "get": {
+                "description": "Busca alimentos na base de dados (mock/API externa) com base em um termo de pesquisa.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "alimentos"
+                ],
+                "summary": "Busca alimentos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "maçã",
+                        "description": "Termo para buscar o alimento",
+                        "name": "search",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de alimentos encontrados",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Food"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Erro pela falta do parâmetro 'search'",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno ao buscar os alimentos",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.Food": {
+            "type": "object",
+            "properties": {
+                "carbohydrate_g": {
+                    "type": "number"
+                },
+                "energy_kcal": {
+                    "type": "number"
+                },
+                "fat_g": {
+                    "type": "number"
+                },
+                "fiber_g": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "protein_g": {
+                    "type": "number"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
