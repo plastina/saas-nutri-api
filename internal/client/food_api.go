@@ -91,7 +91,7 @@ func (c *offClient) SearchFoods(query string) ([]model.Food, error) {
 			continue
 		}
 		foods = append(foods, model.Food{
-			ID:            p.ID,
+			Id:            p.ID,
 			Name:          p.ProductName,
 			Source:        "OpenFoodFacts",
 			EnergyKcal:    parseFloatOrZero(p.Nutriments.EnergyKcal100g),
@@ -135,8 +135,8 @@ func (m *mockFoodAPIClient) SearchFoods(query string) ([]model.Food, error) {
 	log.Printf("Cliente Mock: Buscando por '%s'\n", query)
 	if query == "maçã" {
 		return []model.Food{
-			{ID: "mock1", Name: "Maçã Fuji (Mock)", Source: "mock", EnergyKcal: 52, ProteinG: 0.3, CarbohydrateG: 14, FatG: 0.2, FiberG: 2.4},
-			{ID: "mock2", Name: "Maçã Gala (Mock)", Source: "mock", EnergyKcal: 57, ProteinG: 0.2, CarbohydrateG: 13.7, FatG: 0.1, FiberG: 2.1},
+			{Id: "mock1", Name: "Maçã Fuji (Mock)", Source: "mock", EnergyKcal: 52, ProteinG: 0.3, CarbohydrateG: 14, FatG: 0.2, FiberG: 2.4},
+			{Id: "mock2", Name: "Maçã Gala (Mock)", Source: "mock", EnergyKcal: 57, ProteinG: 0.2, CarbohydrateG: 13.7, FatG: 0.1, FiberG: 2.1},
 		}, nil
 	}
 	return []model.Food{}, nil

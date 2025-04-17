@@ -1,5 +1,14 @@
 basePath: /api
 definitions:
+  client.MeasureItem:
+    properties:
+      display_name:
+        type: string
+      gram_equivalent:
+        type: number
+      measure_name:
+        type: string
+    type: object
   model.Food:
     properties:
       carbohydrate_g:
@@ -37,11 +46,11 @@ paths:
     get:
       consumes:
       - application/json
-      description: Busca alimentos na base de dados (mock/API externa) com base em
-        um termo de pesquisa.
+      description: Busca alimentos na base TACO (via DynamoDB) com base em um termo
+        de pesquisa.
       parameters:
       - description: Termo para buscar o alimento
-        example: maçã
+        example: arroz
         in: query
         name: search
         required: true
@@ -50,20 +59,54 @@ paths:
       - application/json
       responses:
         "200":
-          description: Lista de alimentos encontrados
+          description: Lista de alimentos encontrados da TACO" // <--- REVERTIDO para
+            model.Food
           schema:
             items:
               $ref: '#/definitions/model.Food'
             type: array
         "400":
-          description: Erro pela falta do parâmetro 'search'
+          description: 'Erro: Parâmetro ''search'' é obrigatório'
           schema:
             type: string
         "500":
-          description: Erro interno ao buscar os alimentos
+          description: Erro interno ao buscar dados dos alimentos
           schema:
             type: string
-      summary: Busca alimentos
+      summary: Busca alimentos (APENAS TACO/DynamoDB)
+      tags:
+      - alimentos
+  /foods/{foodId}/measures:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista de medidas caseiras e seus equivalentes em gramas
+        para um ID de alimento específico.
+      parameters:
+      - description: 'ID do Alimento (ex: UUID ou código TACO)'
+        example: d5e1c1b0-...
+        in: path
+        name: foodId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de medidas caseiras" // <--- REVERTIDO para client.MeasureItem
+          schema:
+            items:
+              $ref: '#/definitions/client.MeasureItem'
+            type: array
+        "400":
+          description: 'Erro: ID do alimento é obrigatório'
+          schema:
+            type: string
+        "500":
+          description: Erro interno ao buscar medidas
+          schema:
+            type: string
+      summary: Busca medidas caseiras de um alimento
       tags:
       - alimentos
 swagger: "2.0"
