@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 
 	"saas-nutri/internal/client"
@@ -49,19 +47,16 @@ func mapTacoToFood(tacoItem client.TacoFoodItem) model.Food {
 func (h *FoodHandler) SearchFoods(w http.ResponseWriter, r *http.Request) {
 	searchTerm := r.URL.Query().Get("search")
 	if searchTerm == "" {
-		http.Error(w, "Parâmetro 'search' é obrigatório", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Parâmetro 'search' é obrigatório")
 		return
 	}
 
-	log.Printf("Handler (TACO Only): Recebida busca por '%s'", searchTerm)
 	ctx := r.Context()
-
 	var mappedResults []model.Food
 
 	tacoResults, errTaco := h.tacoRepo.SearchFoodsByNamePrefix(ctx, searchTerm)
 	if errTaco != nil {
-		log.Printf("ERRO ao buscar na TACO (DynamoDB): %v", errTaco)
-		http.Error(w, "Erro interno ao buscar dados dos alimentos", http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, "Erro interno ao buscar dados dos alimentos")
 		return
 	}
 
@@ -70,13 +65,7 @@ func (h *FoodHandler) SearchFoods(w http.ResponseWriter, r *http.Request) {
 		mappedResults = append(mappedResults, mappedTacoItem)
 	}
 
-	log.Printf("Handler (TACO Only): Retornando %d resultados para '%s'", len(mappedResults), searchTerm)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(mappedResults); err != nil {
-		log.Printf("Erro ao codificar resposta JSON: %v", err)
-	}
+	RespondWithJSON(w, http.StatusOK, mappedResults)
 }
 
 // GetFoodMeasures godoc
@@ -94,29 +83,16 @@ func (h *FoodHandler) SearchFoods(w http.ResponseWriter, r *http.Request) {
 func (h *FoodHandler) GetFoodMeasures(w http.ResponseWriter, r *http.Request) {
 	foodId := chi.URLParam(r, "foodId")
 	if foodId == "" {
-		http.Error(w, "ID do alimento é obrigatório na URL", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "ID do alimento é obrigatório na URL")
 		return
 	}
 
-	log.Printf("Handler: Recebida busca por medidas para foodId '%s'", foodId)
 	ctx := r.Context()
-
 	measures, err := h.tacoRepo.GetMeasuresForFood(ctx, foodId)
 	if err != nil {
-		log.Printf("Erro (já logado) ao buscar medidas para foodId '%s', retornando o que foi possível.", foodId)
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao buscar medidas caseiras")
+		return
 	}
 
-	if measures == nil {
-		measures = []client.MeasureItem{
-			{MeasureName: "grama", DisplayName: "Grama", GramEquivalent: 1.0},
-		}
-	}
-
-	log.Printf("Handler: Retornando %d medidas para foodId '%s'", len(measures), foodId)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(measures); err != nil {
-		log.Printf("Erro ao encodar resposta JSON de medidas: %v", err)
-	}
+	RespondWithJSON(w, http.StatusOK, measures)
 }

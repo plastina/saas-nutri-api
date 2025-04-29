@@ -31,6 +31,7 @@ type TacoRepository struct {
 }
 
 type MeasureItem struct {
+	FoodID         string  `json:"-" dynamodbav:"food_id"`
 	MeasureName    string  `json:"measure_name" dynamodbav:"measure_name"`
 	DisplayName    string  `json:"display_name" dynamodbav:"display_name"`
 	GramEquivalent float64 `json:"gram_equivalent" dynamodbav:"gram_equivalent"`
@@ -88,7 +89,6 @@ func (r *TacoRepository) SearchFoodsByNamePrefix(ctx context.Context, namePrefix
 
 func (r *TacoRepository) GetMeasuresForFood(ctx context.Context, foodID string) ([]MeasureItem, error) {
 	var items []MeasureItem
-
 	defaultMeasure := MeasureItem{
 		MeasureName:    "grama",
 		DisplayName:    "Grama",
@@ -100,34 +100,26 @@ func (r *TacoRepository) GetMeasuresForFood(ctx context.Context, foodID string) 
 	expressionAttributeValues := map[string]types.AttributeValue{
 		":fid": &types.AttributeValueMemberS{Value: foodID},
 	}
-
 	projectionExpression := "measure_name, display_name, gram_equivalent"
 
 	queryInput := &dynamodb.QueryInput{
-		TableName:                 aws.String("HouseholdMeasures"), 
+		TableName:                 aws.String("HouseholdMeasures"),
 		KeyConditionExpression:    aws.String(keyConditionExpression),
 		ExpressionAttributeValues: expressionAttributeValues,
 		ProjectionExpression:      aws.String(projectionExpression),
 	}
 
-	log.Printf("Executando Query na HouseholdMeasures para food_id: '%s'", foodID)
-
 	result, err := r.DB.Query(ctx, queryInput)
 	if err != nil {
-		log.Printf("AVISO: Erro ao buscar medidas caseiras para food_id '%s': %v. Retornando apenas 'Grama'.", foodID, err)
-		return items, nil
+		return nil, fmt.Errorf("erro ao buscar medidas no DB para food_id %s: %w", foodID, err)
 	}
 
 	var dbMeasures []MeasureItem
 	err = attributevalue.UnmarshalListOfMaps(result.Items, &dbMeasures)
 	if err != nil {
-		log.Printf("AVISO: Erro ao fazer unmarshal das medidas caseiras para food_id '%s': %v. Retornando apenas 'Grama'.", foodID, err)
-		return items, nil
+		return nil, fmt.Errorf("erro ao processar medidas do DB para food_id %s: %w", foodID, err)
 	}
 
 	items = append(items, dbMeasures...)
-
-	log.Printf("Medidas encontradas para food_id '%s': %d", foodID, len(items))
-
 	return items, nil
 }
