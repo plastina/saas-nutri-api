@@ -96,3 +96,20 @@ func (h *FoodHandler) GetFoodMeasures(w http.ResponseWriter, r *http.Request) {
 
 	RespondWithJSON(w, http.StatusOK, measures)
 }
+
+func (h *FoodHandler) GetFoodWithMeasures(w http.ResponseWriter, r *http.Request) {
+	foodId := chi.URLParam(r, "foodId")
+	if foodId == "" {
+		RespondWithError(w, http.StatusBadRequest, "ID do alimento é obrigatório na URL")
+		return
+	}
+
+	ctx := r.Context()
+	food, err := h.tacoRepo.GetFoodWithMeasures(ctx, foodId)
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, "Alimento não encontrado")
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, food)
+}

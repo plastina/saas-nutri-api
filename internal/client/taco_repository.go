@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"saas-nutri/internal/model"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -122,4 +123,58 @@ func (r *TacoRepository) GetMeasuresForFood(ctx context.Context, foodID string) 
 
 	items = append(items, dbMeasures...)
 	return items, nil
+}
+
+func (r *TacoRepository) GetFoodWithMeasures(ctx context.Context, foodID string) (*model.Food, error) {
+	key := map[string]types.AttributeValue{
+		"food_id": &types.AttributeValueMemberS{Value: foodID},
+	}
+
+	getItemInput := &dynamodb.GetItemInput{
+		TableName: aws.String(r.TableName),
+		Key:       key,
+	}
+
+	result, err := r.DB.GetItem(ctx, getItemInput)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar alimento no DynamoDB: %w", err)
+	}
+
+	if result.Item == nil {
+		return nil, fmt.Errorf("alimento não encontrado: %s", foodID)
+	}
+
+	var foodItem TacoFoodItem
+	err = attributevalue.UnmarshalMap(result.Item, &foodItem)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao deserializar alimento: %w", err)
+	}
+
+	food := &model.Food{
+		Id:            foodItem.FoodID,
+		Name:          foodItem.NormalizedName, 
+		Source:        foodItem.DataSource,
+		EnergyKcal:    foodItem.EnergyKcal,
+		ProteinG:      foodItem.ProteinG,
+		CarbohydrateG: foodItem.CarbohydrateG,
+		FatG:          foodItem.FatG,
+		FiberG:        foodItem.FiberG,
+	}
+
+	measures, err := r.GetMeasuresForFood(ctx, foodID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar medidas caseiras: %w", err)
+	}
+
+	var householdMeasures []model.HouseholdMeasure
+	for _, m := range measures {
+		householdMeasures = append(householdMeasures, model.HouseholdMeasure{
+			Name:  m.DisplayName,
+			Grams: m.GramEquivalent,
+		})
+	}
+
+	food.HouseholdMeasures = householdMeasures
+
+	return food, nil
 }

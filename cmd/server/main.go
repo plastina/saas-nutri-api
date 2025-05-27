@@ -90,12 +90,15 @@ func main() {
 		log.Println("Configurando rotas sob /api...")
 
 		r.Route("/foods", func(r chi.Router) {
-			r.Get("/", foodHandler.SearchFoods)
-			log.Println("Rota GET /api/foods configurada.")
+		r.Get("/", foodHandler.SearchFoods)
+		log.Println("Rota GET /api/foods configurada.")
 
-			r.Get("/{foodId}/measures", foodHandler.GetFoodMeasures)
-			log.Println("Rota GET /api/foods/{foodId}/measures configurada.")
-		})
+		r.Get("/{foodId}", foodHandler.GetFoodWithMeasures)
+		log.Println("Rota GET /api/foods/{foodId} configurada.")
+
+		r.Get("/{foodId}/measures", foodHandler.GetFoodMeasures)
+		log.Println("Rota GET /api/foods/{foodId}/measures configurada.")
+	})
 
 
 	})
