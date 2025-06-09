@@ -32,10 +32,11 @@ type TacoRepository struct {
 }
 
 type MeasureItem struct {
-	FoodID         string  `json:"-" dynamodbav:"food_id"`
-	MeasureName    string  `json:"measure_name" dynamodbav:"measure_name"`
-	DisplayName    string  `json:"display_name" dynamodbav:"display_name"`
-	GramEquivalent float64 `json:"gram_equivalent" dynamodbav:"gram_equivalent"`
+    FoodID           string  `json:"-" dynamodbav:"food_id"`
+    MeasureName      string  `json:"measure_name" dynamodbav:"measure_name"`
+    MeasureQuantity  string  `json:"measure_quantity" dynamodbav:"measure_quantity"`
+    DisplayName      string  `json:"display_name"`
+    GramEquivalent   float64 `json:"gram_equivalent" dynamodbav:"measure_weight_g"`
 }
 
 func NewTacoRepository(db *dynamodb.Client, tableName, indexName string) *TacoRepository {
@@ -89,40 +90,72 @@ func (r *TacoRepository) SearchFoodsByNamePrefix(ctx context.Context, namePrefix
 }
 
 func (r *TacoRepository) GetMeasuresForFood(ctx context.Context, foodID string) ([]MeasureItem, error) {
-	var items []MeasureItem
-	defaultMeasure := MeasureItem{
-		MeasureName:    "grama",
-		DisplayName:    "Grama",
-		GramEquivalent: 1.0,
-	}
-	items = append(items, defaultMeasure)
+    var items []MeasureItem
+    defaultMeasure := MeasureItem{
+        MeasureName:    "grama",
+        DisplayName:    "Grama",
+        GramEquivalent: 1.0,
+    }
+    items = append(items, defaultMeasure)
 
-	keyConditionExpression := "food_id = :fid"
-	expressionAttributeValues := map[string]types.AttributeValue{
-		":fid": &types.AttributeValueMemberS{Value: foodID},
-	}
-	projectionExpression := "measure_name, display_name, gram_equivalent"
+    keyConditionExpression := "food_id = :fid"
+    expressionAttributeValues := map[string]types.AttributeValue{
+        ":fid": &types.AttributeValueMemberS{Value: foodID},
+    }
+    
+    projectionExpression := "food_id, measure_name, measure_quantity, measure_weight_g"
 
-	queryInput := &dynamodb.QueryInput{
-		TableName:                 aws.String("HouseholdMeasures"),
-		KeyConditionExpression:    aws.String(keyConditionExpression),
-		ExpressionAttributeValues: expressionAttributeValues,
-		ProjectionExpression:      aws.String(projectionExpression),
-	}
+    log.Printf("Buscando medidas para food_id: %s", foodID)
 
-	result, err := r.DB.Query(ctx, queryInput)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao buscar medidas no DB para food_id %s: %w", foodID, err)
-	}
+    queryInput := &dynamodb.QueryInput{
+        TableName:                 aws.String("HouseholdMeasures"),
+        KeyConditionExpression:    aws.String(keyConditionExpression),
+        ExpressionAttributeValues: expressionAttributeValues,
+        ProjectionExpression:      aws.String(projectionExpression),
+    }
 
-	var dbMeasures []MeasureItem
-	err = attributevalue.UnmarshalListOfMaps(result.Items, &dbMeasures)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao processar medidas do DB para food_id %s: %w", foodID, err)
-	}
+    result, err := r.DB.Query(ctx, queryInput)
+    if err != nil {
+        log.Printf("ERRO ao buscar medidas: %v", err)
+        return nil, fmt.Errorf("erro ao buscar medidas no DB para food_id %s: %w", foodID, err)
+    }
 
-	items = append(items, dbMeasures...)
-	return items, nil
+    log.Printf("DynamoDB retornou %d itens", len(result.Items))
+    for i, item := range result.Items {
+        log.Printf("Item %d: %+v", i, item)
+    }
+
+    var dbMeasures []MeasureItem
+    err = attributevalue.UnmarshalListOfMaps(result.Items, &dbMeasures)
+    if err != nil {
+        log.Printf("ERRO no unmarshal: %v", err)
+        return nil, fmt.Errorf("erro ao processar medidas do DB para food_id %s: %w", foodID, err)
+    }
+
+    log.Printf("Após unmarshal: %+v", dbMeasures)
+
+    for i := range dbMeasures {
+        if dbMeasures[i].MeasureQuantity != "" {
+            dbMeasures[i].DisplayName = dbMeasures[i].MeasureQuantity + " " + dbMeasures[i].MeasureName
+        } else {
+            dbMeasures[i].DisplayName = dbMeasures[i].MeasureName
+        }
+        log.Printf("Medida %d: name=%s, quantity=%s, weight=%f, display=%s", 
+            i, dbMeasures[i].MeasureName, dbMeasures[i].MeasureQuantity, 
+            dbMeasures[i].GramEquivalent, dbMeasures[i].DisplayName)
+    }
+
+    testItem := MeasureItem{
+        FoodID:          foodID,
+        MeasureName:     "colher de sopa",
+        MeasureQuantity: "1",
+        DisplayName:     "1 colher de sopa",
+        GramEquivalent:  15.0,
+    }
+    items = append(items, testItem)
+    
+    items = append(items, dbMeasures...)
+    return items, nil
 }
 
 func (r *TacoRepository) GetFoodWithMeasures(ctx context.Context, foodID string) (*model.Food, error) {
