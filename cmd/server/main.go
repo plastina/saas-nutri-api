@@ -47,7 +47,10 @@ func main() {
 	r := chi.NewRouter()
 
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:4200"},
+	AllowedOrigins: []string{
+    "https://saas-nutri-client.vercel.app",
+    "http://localhost:4200",               
+	},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
