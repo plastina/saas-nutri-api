@@ -1,163 +1,281 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "description": "API para o MVP do SaaS para nutricionistas.",
-        "title": "API SaaS Nutri",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
-        "version": "1.0"
+  "swagger": "2.0",
+  "info": {
+    "description": "API para o MVP do SaaS para nutricionistas.",
+    "title": "API SaaS Nutri",
+    "termsOfService": "http://swagger.io/terms/",
+    "contact": {
+      "name": "API Support",
+      "url": "http://www.swagger.io/support",
+      "email": "support@swagger.io"
     },
-    "host": "localhost:8080",
-    "basePath": "/api",
-    "paths": {
-        "/foods": {
-            "get": {
-                "description": "Busca alimentos na base TACO (via DynamoDB) com base em um termo de pesquisa.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "alimentos"
-                ],
-                "summary": "Busca alimentos (APENAS TACO/DynamoDB)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "arroz",
-                        "description": "Termo para buscar o alimento",
-                        "name": "search",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Lista de alimentos encontrados da TACO\" // \u003c--- REVERTIDO para model.Food",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Food"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Erro: Parâmetro 'search' é obrigatório",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Erro interno ao buscar dados dos alimentos",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/foods/{foodId}/measures": {
-            "get": {
-                "description": "Retorna uma lista de medidas caseiras e seus equivalentes em gramas para um ID de alimento específico.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "alimentos"
-                ],
-                "summary": "Busca medidas caseiras de um alimento",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "d5e1c1b0-...",
-                        "description": "ID do Alimento (ex: UUID ou código TACO)",
-                        "name": "foodId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Lista de medidas caseiras\" // \u003c--- REVERTIDO para client.MeasureItem",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/client.MeasureItem"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Erro: ID do alimento é obrigatório",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Erro interno ao buscar medidas",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        }
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
     },
-    "definitions": {
-        "client.MeasureItem": {
-            "type": "object",
-            "properties": {
-                "display_name": {
-                    "type": "string"
-                },
-                "gram_equivalent": {
-                    "type": "number"
-                },
-                "measure_name": {
-                    "type": "string"
-                }
+    "version": "1.0"
+  },
+  "host": "localhost:8080",
+  "basePath": "/api",
+  "paths": {
+    "/foods": {
+      "get": {
+        "description": "Busca alimentos na base TACO (via DynamoDB) com base em um termo de pesquisa.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["alimentos"],
+        "summary": "Busca alimentos (APENAS TACO/DynamoDB)",
+        "parameters": [
+          {
+            "type": "string",
+            "example": "arroz",
+            "description": "Termo para buscar o alimento",
+            "name": "search",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de alimentos encontrados da TACO\" // \u003c--- REVERTIDO para model.Food",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/model.Food"
+              }
             }
-        },
-        "model.Food": {
-            "type": "object",
-            "properties": {
-                "carbohydrate_g": {
-                    "type": "number"
-                },
-                "energy_kcal": {
-                    "type": "number"
-                },
-                "fat_g": {
-                    "type": "number"
-                },
-                "fiber_g": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "protein_g": {
-                    "type": "number"
-                },
-                "source": {
-                    "type": "string"
-                }
+          },
+          "400": {
+            "description": "Erro: Parâmetro 'search' é obrigatório",
+            "schema": {
+              "type": "string"
             }
+          },
+          "500": {
+            "description": "Erro interno ao buscar dados dos alimentos",
+            "schema": {
+              "type": "string"
+            }
+          }
         }
+      }
+    },
+    "/foods/{foodId}/measures": {
+      "get": {
+        "description": "Retorna uma lista de medidas caseiras e seus equivalentes em gramas para um ID de alimento específico.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["alimentos"],
+        "summary": "Busca medidas caseiras de um alimento",
+        "parameters": [
+          {
+            "type": "string",
+            "example": "d5e1c1b0-...",
+            "description": "ID do Alimento (ex: UUID ou código TACO)",
+            "name": "foodId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de medidas caseiras\" // \u003c--- REVERTIDO para client.MeasureItem",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/client.MeasureItem"
+              }
+            }
+          },
+          "400": {
+            "description": "Erro: ID do alimento é obrigatório",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "500": {
+            "description": "Erro interno ao buscar medidas",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/plan/calculate": {
+      "post": {
+        "description": "Recebe um plano com refeicoes e itens (food_id e quantidade em gramas) e retorna kcal por item e total por refeicao.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["plano"],
+        "summary": "Calcula calorias por refeicao",
+        "parameters": [
+          {
+            "description": "Plano com refeicoes",
+            "name": "payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/model.PlanCalculateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Totais calculados",
+            "schema": {
+              "$ref": "#/definitions/model.PlanCalculateResponse"
+            }
+          },
+          "400": {
+            "description": "Erro de validacao",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "404": {
+            "description": "Alimento nao encontrado",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
+  },
+  "definitions": {
+    "client.MeasureItem": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string"
+        },
+        "gram_equivalent": {
+          "type": "number"
+        },
+        "measure_name": {
+          "type": "string"
+        }
+      }
+    },
+    "model.Food": {
+      "type": "object",
+      "properties": {
+        "carbohydrate_g": {
+          "type": "number"
+        },
+        "energy_kcal": {
+          "type": "number"
+        },
+        "fat_g": {
+          "type": "number"
+        },
+        "fiber_g": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "protein_g": {
+          "type": "number"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "model.MealCalories": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/model.MealItemCalories"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "total_kcal": {
+          "type": "number"
+        }
+      }
+    },
+    "model.MealInput": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/model.MealItemInput"
+          }
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "model.MealItemCalories": {
+      "type": "object",
+      "properties": {
+        "food_id": {
+          "type": "string"
+        },
+        "kcal": {
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        },
+        "quantity_in_grams": {
+          "type": "number"
+        }
+      }
+    },
+    "model.MealItemInput": {
+      "type": "object",
+      "properties": {
+        "food_id": {
+          "type": "string"
+        },
+        "quantity_in_grams": {
+          "type": "number"
+        }
+      }
+    },
+    "model.PlanCalculateRequest": {
+      "type": "object",
+      "properties": {
+        "meals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/model.MealInput"
+          }
+        }
+      }
+    },
+    "model.PlanCalculateResponse": {
+      "type": "object",
+      "properties": {
+        "meals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/model.MealCalories"
+          }
+        },
+        "total_kcal": {
+          "type": "number"
+        }
+      }
+    }
+  }
 }

@@ -32,11 +32,11 @@ type TacoRepository struct {
 }
 
 type MeasureItem struct {
-    FoodID           string  `json:"-" dynamodbav:"food_id"`
-    MeasureName      string  `json:"measure_name" dynamodbav:"measure_name"`
-    MeasureQuantity  string  `json:"measure_quantity" dynamodbav:"measure_quantity"`
-    DisplayName      string  `json:"display_name"`
-    GramEquivalent   float64 `json:"gram_equivalent" dynamodbav:"measure_weight_g"`
+    FoodID          string  `json:"-" dynamodbav:"food_id"`
+    MeasureName     string  `json:"measure_name" dynamodbav:"measure_name"`
+    MeasureQuantity string  `json:"measure_quantity" dynamodbav:"measure_quantity"`
+    DisplayName     string  `json:"display_name"`
+    GramEquivalent  float64 `json:"gram_equivalent" dynamodbav:"measure_weight_g"`
 }
 
 func NewTacoRepository(db *dynamodb.Client, tableName, indexName string) *TacoRepository {
@@ -93,10 +93,49 @@ func (r *TacoRepository) GetMeasuresForFood(ctx context.Context, foodID string) 
     var items []MeasureItem
     defaultMeasure := MeasureItem{
         MeasureName:    "grama",
-        DisplayName:    "Grama",
+        DisplayName:    "Grama (1g)",
         GramEquivalent: 1.0,
     }
     items = append(items, defaultMeasure)
+
+    // Get food name to determine category and add appropriate measures
+    foodKey := map[string]types.AttributeValue{
+        "food_id": &types.AttributeValueMemberS{Value: foodID},
+    }
+    foodResult, err := r.DB.GetItem(ctx, &dynamodb.GetItemInput{
+        TableName: aws.String(r.TableName),
+        Key:       foodKey,
+        ProjectionExpression: aws.String("original_name"),
+    })
+    if err != nil {
+        log.Printf("Erro ao buscar nome do alimento: %v", err)
+    } else if foodResult.Item != nil {
+        var food TacoFoodItem
+        err = attributevalue.UnmarshalMap(foodResult.Item, &food)
+        if err == nil {
+            foodName := strings.ToLower(food.OriginalName)
+            // Add measures based on food name keywords for categories
+            if isFruit(foodName) {
+                fruitMeasures := []MeasureItem{
+                    {FoodID: foodID, MeasureName: "fatia pequena (30g)", MeasureQuantity: "", DisplayName: "fatia pequena (30g)", GramEquivalent: 30.0},
+                    {FoodID: foodID, MeasureName: "fatia média (50g)", MeasureQuantity: "", DisplayName: "fatia média (50g)", GramEquivalent: 50.0},
+                    {FoodID: foodID, MeasureName: "fatia grande (70g)", MeasureQuantity: "", DisplayName: "fatia grande (70g)", GramEquivalent: 70.0},
+                    {FoodID: foodID, MeasureName: "unidade média (100g)", MeasureQuantity: "", DisplayName: "unidade média (100g)", GramEquivalent: 100.0},
+                }
+                items = append(items, fruitMeasures...)
+            } else if isMeat(foodName) {
+                meatMeasures := []MeasureItem{
+                    {FoodID: foodID, MeasureName: "fatia pequena (50g)", MeasureQuantity: "", DisplayName: "fatia pequena (50g)", GramEquivalent: 50.0},
+                    {FoodID: foodID, MeasureName: "fatia média (100g)", MeasureQuantity: "", DisplayName: "fatia média (100g)", GramEquivalent: 100.0},
+                    {FoodID: foodID, MeasureName: "fatia grande (150g)", MeasureQuantity: "", DisplayName: "fatia grande (150g)", GramEquivalent: 150.0},
+                    {FoodID: foodID, MeasureName: "porção pequena (100g)", MeasureQuantity: "", DisplayName: "porção pequena (100g)", GramEquivalent: 100.0},
+                    {FoodID: foodID, MeasureName: "porção média (150g)", MeasureQuantity: "", DisplayName: "porção média (150g)", GramEquivalent: 150.0},
+                    {FoodID: foodID, MeasureName: "porção grande (200g)", MeasureQuantity: "", DisplayName: "porção grande (200g)", GramEquivalent: 200.0},
+                }
+                items = append(items, meatMeasures...)
+            }
+        }
+    }
 
     keyConditionExpression := "food_id = :fid"
     expressionAttributeValues := map[string]types.AttributeValue{
@@ -135,27 +174,49 @@ func (r *TacoRepository) GetMeasuresForFood(ctx context.Context, foodID string) 
     log.Printf("Após unmarshal: %+v", dbMeasures)
 
     for i := range dbMeasures {
-        if dbMeasures[i].MeasureQuantity != "" {
-            dbMeasures[i].DisplayName = dbMeasures[i].MeasureQuantity + " " + dbMeasures[i].MeasureName
-        } else {
-            dbMeasures[i].DisplayName = dbMeasures[i].MeasureName
-        }
+        dbMeasures[i].DisplayName = dbMeasures[i].MeasureName
         log.Printf("Medida %d: name=%s, quantity=%s, weight=%f, display=%s", 
             i, dbMeasures[i].MeasureName, dbMeasures[i].MeasureQuantity, 
             dbMeasures[i].GramEquivalent, dbMeasures[i].DisplayName)
     }
 
-    testItem := MeasureItem{
-        FoodID:          foodID,
-        MeasureName:     "colher de sopa",
-        MeasureQuantity: "1",
-        DisplayName:     "1 colher de sopa",
-        GramEquivalent:  15.0,
+    // Create a map of existing measure_names to avoid duplicates
+    existing := make(map[string]bool)
+    for _, m := range items {
+        existing[m.MeasureName] = true
     }
-    items = append(items, testItem)
-    
-    items = append(items, dbMeasures...)
+
+    // Filter dbMeasures to avoid duplicates
+    var uniqueDbMeasures []MeasureItem
+    for _, m := range dbMeasures {
+        if !existing[m.MeasureName] {
+            uniqueDbMeasures = append(uniqueDbMeasures, m)
+            existing[m.MeasureName] = true
+        }
+    }
+
+    items = append(items, uniqueDbMeasures...)
     return items, nil
+}
+
+func isFruit(name string) bool {
+    fruits := []string{"banana", "maçã", "laranja", "abacaxi", "uva", "pera", "manga", "melancia", "morango", "fruta"}
+    for _, fruit := range fruits {
+        if strings.Contains(name, fruit) {
+            return true
+        }
+    }
+    return false
+}
+
+func isMeat(name string) bool {
+    meats := []string{"bife", "carne", "frango", "peixe", "bovina", "suína", "aves", "cordeiro"}
+    for _, meat := range meats {
+        if strings.Contains(name, meat) {
+            return true
+        }
+    }
+    return false
 }
 
 func (r *TacoRepository) GetFoodWithMeasures(ctx context.Context, foodID string) (*model.Food, error) {
@@ -202,7 +263,7 @@ func (r *TacoRepository) GetFoodWithMeasures(ctx context.Context, foodID string)
 	var householdMeasures []model.HouseholdMeasure
 	for _, m := range measures {
 		householdMeasures = append(householdMeasures, model.HouseholdMeasure{
-			Name:  m.DisplayName,
+			Name:  m.MeasureName,
 			Grams: m.GramEquivalent,
 		})
 	}

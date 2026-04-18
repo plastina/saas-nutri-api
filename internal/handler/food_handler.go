@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"saas-nutri/internal/client"
 	"saas-nutri/internal/model"
@@ -29,7 +30,27 @@ func mapTacoToFood(tacoItem client.TacoFoodItem) model.Food {
 		CarbohydrateG: tacoItem.CarbohydrateG,
 		FatG:          tacoItem.FatG,
 		FiberG:        tacoItem.FiberG,
+		PortionSizes:  getPortionSizes(tacoItem.OriginalName),
 	}
+}
+
+func getPortionSizes(name string) []model.PortionSize {
+	nameLower := strings.ToLower(name)
+	if strings.Contains(nameLower, "fruta") || strings.Contains(nameLower, "fruit") || strings.Contains(nameLower, "maçã") || strings.Contains(nameLower, "banana") {
+		return []model.PortionSize{
+			{Size: "small", Grams: 50},
+			{Size: "medium", Grams: 100},
+			{Size: "large", Grams: 150},
+		}
+	} else if strings.Contains(nameLower, "bife") || strings.Contains(nameLower, "steak") || strings.Contains(nameLower, "carne") {
+		return []model.PortionSize{
+			{Size: "small", Grams: 100},
+			{Size: "medium", Grams: 200},
+			{Size: "large", Grams: 300},
+		}
+	}
+	// Default: empty or generic
+	return []model.PortionSize{}
 }
 
 // SearchFoods godoc
@@ -110,6 +131,9 @@ func (h *FoodHandler) GetFoodWithMeasures(w http.ResponseWriter, r *http.Request
 		RespondWithError(w, http.StatusNotFound, "Alimento não encontrado")
 		return
 	}
+
+	// Adicionar PortionSizes baseado no nome
+	food.PortionSizes = getPortionSizes(food.Name)
 
 	RespondWithJSON(w, http.StatusOK, food)
 }

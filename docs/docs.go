@@ -120,6 +120,58 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/plan/calculate": {
+            "post": {
+                "description": "Recebe um plano com refeicoes e itens (food_id e quantidade em gramas) e retorna kcal por item e total por refeicao.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plano"
+                ],
+                "summary": "Calcula calorias por refeicao",
+                "parameters": [
+                    {
+                        "description": "Plano com refeicoes",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.PlanCalculateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Totais calculados",
+                        "schema": {
+                            "$ref": "#/definitions/model.PlanCalculateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Erro de validacao",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Alimento nao encontrado",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -163,6 +215,90 @@ const docTemplate = `{
                 },
                 "source": {
                     "type": "string"
+                }
+            }
+        },
+        "model.MealCalories": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MealItemCalories"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "total_kcal": {
+                    "type": "number"
+                }
+            }
+        },
+        "model.MealInput": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MealItemInput"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.MealItemCalories": {
+            "type": "object",
+            "properties": {
+                "food_id": {
+                    "type": "string"
+                },
+                "kcal": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "quantity_in_grams": {
+                    "type": "number"
+                }
+            }
+        },
+        "model.MealItemInput": {
+            "type": "object",
+            "properties": {
+                "food_id": {
+                    "type": "string"
+                },
+                "quantity_in_grams": {
+                    "type": "number"
+                }
+            }
+        },
+        "model.PlanCalculateRequest": {
+            "type": "object",
+            "properties": {
+                "meals": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MealInput"
+                    }
+                }
+            }
+        },
+        "model.PlanCalculateResponse": {
+            "type": "object",
+            "properties": {
+                "meals": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MealCalories"
+                    }
+                },
+                "total_kcal": {
+                    "type": "number"
                 }
             }
         }

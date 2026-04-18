@@ -81,6 +81,8 @@ func main() {
 
 	foodHandler := handler.NewFoodHandler(tacoRepo)
 	log.Println("Handler de Alimentos inicializado (modo TACO only).")
+	planHandler := handler.NewPlanHandler(tacoRepo)
+	log.Println("Handler de Plano inicializado.")
 
 
 	log.Println("Configurando rotas...")
@@ -101,6 +103,11 @@ func main() {
 
 		r.Get("/{foodId}/measures", foodHandler.GetFoodMeasures)
 		log.Println("Rota GET /api/foods/{foodId}/measures configurada.")
+	})
+
+	r.Route("/plan", func(r chi.Router) {
+		r.Post("/calculate", planHandler.CalculateMealCalories)
+		log.Println("Rota POST /api/plan/calculate configurada.")
 	})
 
 

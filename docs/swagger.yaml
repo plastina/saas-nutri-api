@@ -28,6 +28,60 @@ definitions:
       source:
         type: string
     type: object
+  model.MealCalories:
+    properties:
+      items:
+        items:
+          $ref: "#/definitions/model.MealItemCalories"
+        type: array
+      name:
+        type: string
+      total_kcal:
+        type: number
+    type: object
+  model.MealInput:
+    properties:
+      items:
+        items:
+          $ref: "#/definitions/model.MealItemInput"
+        type: array
+      name:
+        type: string
+    type: object
+  model.MealItemCalories:
+    properties:
+      food_id:
+        type: string
+      kcal:
+        type: number
+      name:
+        type: string
+      quantity_in_grams:
+        type: number
+    type: object
+  model.MealItemInput:
+    properties:
+      food_id:
+        type: string
+      quantity_in_grams:
+        type: number
+    type: object
+  model.PlanCalculateRequest:
+    properties:
+      meals:
+        items:
+          $ref: "#/definitions/model.MealInput"
+        type: array
+    type: object
+  model.PlanCalculateResponse:
+    properties:
+      meals:
+        items:
+          $ref: "#/definitions/model.MealCalories"
+        type: array
+      total_kcal:
+        type: number
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -45,28 +99,30 @@ paths:
   /foods:
     get:
       consumes:
-      - application/json
-      description: Busca alimentos na base TACO (via DynamoDB) com base em um termo
+        - application/json
+      description:
+        Busca alimentos na base TACO (via DynamoDB) com base em um termo
         de pesquisa.
       parameters:
-      - description: Termo para buscar o alimento
-        example: arroz
-        in: query
-        name: search
-        required: true
-        type: string
+        - description: Termo para buscar o alimento
+          example: arroz
+          in: query
+          name: search
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
-          description: Lista de alimentos encontrados da TACO" // <--- REVERTIDO para
+          description:
+            Lista de alimentos encontrados da TACO" // <--- REVERTIDO para
             model.Food
           schema:
             items:
-              $ref: '#/definitions/model.Food'
+              $ref: "#/definitions/model.Food"
             type: array
         "400":
-          description: 'Erro: Parâmetro ''search'' é obrigatório'
+          description: "Erro: Parâmetro 'search' é obrigatório"
           schema:
             type: string
         "500":
@@ -75,31 +131,32 @@ paths:
             type: string
       summary: Busca alimentos (APENAS TACO/DynamoDB)
       tags:
-      - alimentos
+        - alimentos
   /foods/{foodId}/measures:
     get:
       consumes:
-      - application/json
-      description: Retorna uma lista de medidas caseiras e seus equivalentes em gramas
+        - application/json
+      description:
+        Retorna uma lista de medidas caseiras e seus equivalentes em gramas
         para um ID de alimento específico.
       parameters:
-      - description: 'ID do Alimento (ex: UUID ou código TACO)'
-        example: d5e1c1b0-...
-        in: path
-        name: foodId
-        required: true
-        type: string
+        - description: "ID do Alimento (ex: UUID ou código TACO)"
+          example: d5e1c1b0-...
+          in: path
+          name: foodId
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: Lista de medidas caseiras" // <--- REVERTIDO para client.MeasureItem
           schema:
             items:
-              $ref: '#/definitions/client.MeasureItem'
+              $ref: "#/definitions/client.MeasureItem"
             type: array
         "400":
-          description: 'Erro: ID do alimento é obrigatório'
+          description: "Erro: ID do alimento é obrigatório"
           schema:
             type: string
         "500":
@@ -108,5 +165,41 @@ paths:
             type: string
       summary: Busca medidas caseiras de um alimento
       tags:
-      - alimentos
+        - alimentos
+  /plan/calculate:
+    post:
+      consumes:
+        - application/json
+      description:
+        Recebe um plano com refeicoes e itens (food_id e quantidade em gramas)
+        e retorna kcal por item e total por refeicao.
+      parameters:
+        - description: Plano com refeicoes
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/model.PlanCalculateRequest"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Totais calculados
+          schema:
+            $ref: "#/definitions/model.PlanCalculateResponse"
+        "400":
+          description: Erro de validacao
+          schema:
+            type: string
+        "404":
+          description: Alimento nao encontrado
+          schema:
+            type: string
+        "500":
+          description: Erro interno
+          schema:
+            type: string
+      summary: Calcula calorias por refeicao
+      tags:
+        - plano
 swagger: "2.0"
