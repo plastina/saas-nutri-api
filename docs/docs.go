@@ -45,23 +45,17 @@ const docTemplate = `{
                         "description": "Termo para buscar o alimento",
                         "name": "search",
                         "in": "query",
-                        "required": true
+                        "required": false
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista de alimentos encontrados da TACO\" // \u003c--- REVERTIDO para model.Food",
+                        "description": "Lista de alimentos encontrados da TACO (vazia se o termo for vazio ou sem resultados)",
                         "schema": {
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/model.Food"
                             }
-                        }
-                    },
-                    "400": {
-                        "description": "Erro: Parâmetro 'search' é obrigatório",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     "500": {

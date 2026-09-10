@@ -59,18 +59,13 @@ func getPortionSizes(name string) []model.PortionSize {
 // @Tags         alimentos
 // @Accept       json
 // @Produce      json
-// @Param        search query string true "Termo para buscar o alimento" example(arroz)
-// @Success      200 {array} model.Food "Lista de alimentos encontrados da TACO"
-// @Failure      400 {object} string "Erro: Parâmetro 'search' é obrigatório"
+// @Param        search query string false "Termo para buscar o alimento" example(arroz)
+// @Success      200 {array} model.Food "Lista de alimentos encontrados da TACO (vazia se o termo for vazio ou sem resultados)"
 // @Failure      500 {object} string "Erro interno ao buscar dados dos alimentos"
 // @Router       /foods [get]
 
 func (h *FoodHandler) SearchFoods(w http.ResponseWriter, r *http.Request) {
 	searchTerm := r.URL.Query().Get("search")
-	if searchTerm == "" {
-		RespondWithError(w, http.StatusBadRequest, "Parâmetro 'search' é obrigatório")
-		return
-	}
 
 	ctx := r.Context()
 	mappedResults := make([]model.Food, 0)

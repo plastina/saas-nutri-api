@@ -108,23 +108,19 @@ paths:
           example: arroz
           in: query
           name: search
-          required: true
+          required: false
           type: string
       produces:
         - application/json
       responses:
         "200":
           description:
-            Lista de alimentos encontrados da TACO" // <--- REVERTIDO para
-            model.Food
+            Lista de alimentos encontrados da TACO (vazia se o termo for vazio
+            ou sem resultados)
           schema:
             items:
               $ref: "#/definitions/model.Food"
             type: array
-        "400":
-          description: "Erro: Parâmetro 'search' é obrigatório"
-          schema:
-            type: string
         "500":
           description: Erro interno ao buscar dados dos alimentos
           schema:
