@@ -35,7 +35,7 @@ func main() {
 	db := dynamodb.NewFromConfig(cfg)
 
 	const tacoTable = "TacoFoods"
-	repo := client.NewTacoRepository(db, tacoTable, "FoodNameIndex", "FoodSearchTokens")
+	repo := client.NewTacoRepository(db, tacoTable, "FoodSearchTokens")
 
 	var (
 		startKey map[string]types.AttributeValue

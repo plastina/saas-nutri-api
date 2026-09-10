@@ -41,7 +41,10 @@ Swagger: `http://localhost:8080/swagger/index.html`
 
 - Region configured in code: `sa-east-1`
 - Expected tables: `TacoFoods`, `HouseholdMeasures` and `FoodSearchTokens`
-- Expected GSI: `FoodNameIndex`
+- GSI `FoodNameIndex` (on `TacoFoods`): **no longer used by the code.** Search
+  moved to the `FoodSearchTokens` table; this GSI is now dead weight and can be
+  deleted manually in the AWS console. Left in place here since removing it is an
+  infra change outside the codebase.
 
 ### `FoodSearchTokens` (word index for search)
 

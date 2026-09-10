@@ -29,7 +29,6 @@ type TacoFoodItem struct {
 type TacoRepository struct {
 	DB        *dynamodb.Client
 	TableName string
-	IndexName string
 	// SearchTokensTableName e a tabela do indice de palavras (uma linha por
 	// token de cada alimento) consultada pela busca por prefixo.
 	SearchTokensTableName string
@@ -92,11 +91,10 @@ type MeasureItem struct {
     GramEquivalent  float64 `json:"gram_equivalent" dynamodbav:"measure_weight_g"`
 }
 
-func NewTacoRepository(db *dynamodb.Client, tableName, indexName, searchTokensTableName string) *TacoRepository {
+func NewTacoRepository(db *dynamodb.Client, tableName, searchTokensTableName string) *TacoRepository {
 	return &TacoRepository{
 		DB:                    db,
 		TableName:             tableName,
-		IndexName:             indexName,
 		SearchTokensTableName: searchTokensTableName,
 	}
 }
