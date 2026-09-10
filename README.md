@@ -94,11 +94,15 @@ protein). `cmd/importoff` is a one-shot loader that adds Brazilian products from
 
 The command reads a **local file already downloaded** — it does **not** call the
 OFF API (which is rate-limited). Download one of the full exports from
-<https://world.openfoodfacts.org/data> and decompress it:
+<https://world.openfoodfacts.org/data> (or the mirror
+<https://static.openfoodfacts.org/data/>):
 
-- **CSV** (`en.openfoodfacts.org.products.csv.gz`) — **tab-separated** despite the
-  `.csv` name; this is why `-delimiter` defaults to a tab.
+- **CSV** (`en.openfoodfacts.org.products.csv.gz`, ~4–5 GB) — **tab-separated**
+  despite the `.csv` name; this is why `-delimiter` defaults to a tab.
 - **JSONL** (`openfoodfacts-products.jsonl.gz`) — one product JSON per line.
+
+The `.gz` is read directly (detected by content, not extension), so there is no
+need to decompress the ~50 GB file first.
 
 Only these fields are used: `code`, `product_name`, `brands`, `countries_tags`,
 and the nutriments `energy-kcal_100g`, `proteins_100g`, `carbohydrates_100g`,
@@ -108,11 +112,11 @@ and the nutriments `energy-kcal_100g`, `proteins_100g`, `carbohydrates_100g`,
 
 ```bash
 # dry-run: parse + print the summary, write nothing
-go run ./cmd/importoff -file ./data/en.openfoodfacts.org.products.csv -dry-run
+go run ./cmd/importoff -file ./data/en.openfoodfacts.org.products.csv.gz -dry-run
 
-# real load
-go run ./cmd/importoff -file ./data/en.openfoodfacts.org.products.csv
-go run ./cmd/importoff -file ./data/openfoodfacts-products.jsonl
+# real load (needs AWS credentials for DynamoDB sa-east-1)
+go run ./cmd/importoff -file ./data/en.openfoodfacts.org.products.csv.gz
+go run ./cmd/importoff -file ./data/openfoodfacts-products.jsonl.gz
 ```
 
 Flags: `-format csv|jsonl` (default: by file extension), `-delimiter` (CSV only,

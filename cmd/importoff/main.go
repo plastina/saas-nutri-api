@@ -23,6 +23,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -50,7 +51,7 @@ const (
 )
 
 func main() {
-	filePath := flag.String("file", "", "caminho do dump local do Open Food Facts (.csv/.tsv ou .jsonl)")
+	filePath := flag.String("file", "", "caminho do dump local do Open Food Facts (.csv/.tsv/.jsonl, .gz aceito)")
 	format := flag.String("format", "", "formato do dump: csv ou jsonl (padrao: pela extensao do arquivo)")
 	delimiter := flag.String("delimiter", "\t", "delimitador do CSV (padrao: tab, como no dump oficial do OFF)")
 	batchSize := flag.Int("batch", 500, "quantos alimentos acumular antes de cada gravacao em lote")
@@ -73,17 +74,32 @@ func main() {
 	}
 	defer f.Close()
 
+	// Aceita o dump ainda compactado (.gz) para dispensar os ~50 GB do CSV
+	// descompactado. Detecta pelo magic number do gzip, nao so pela extensao.
+	namePath := *filePath
+	var src io.Reader = bufio.NewReaderSize(f, 1<<20)
+	magic, _ := src.(*bufio.Reader).Peek(2)
+	if len(magic) == 2 && magic[0] == 0x1f && magic[1] == 0x8b {
+		gz, err := gzip.NewReader(src)
+		if err != nil {
+			log.Fatalf("erro ao abrir gzip %s: %v", *filePath, err)
+		}
+		defer gz.Close()
+		src = gz
+		namePath = strings.TrimSuffix(namePath, ".gz")
+	}
+
 	kind := strings.ToLower(*format)
 	if kind == "" {
-		kind = formatFromExt(*filePath)
+		kind = formatFromExt(namePath)
 	}
 
 	var reader recordReader
 	switch kind {
 	case "csv", "tsv":
-		reader, err = newCSVReader(f, rune((*delimiter)[0]))
+		reader, err = newCSVReader(src, rune((*delimiter)[0]))
 	case "jsonl", "ndjson", "json":
-		reader = newJSONLReader(f)
+		reader = newJSONLReader(src)
 	default:
 		log.Fatalf("nao foi possivel determinar o formato do dump; passe -format csv ou -format jsonl")
 	}
