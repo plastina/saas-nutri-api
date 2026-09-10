@@ -233,6 +233,44 @@ func (r *TacoRepository) PutFoodTokens(ctx context.Context, f TacoFoodItem) erro
 	return r.batchWrite(ctx, r.SearchTokensTableName, requests)
 }
 
+// PutFoodsBatch grava um conjunto de alimentos na TacoFoods e as linhas de
+// token de busca de cada um, em lote, com o mesmo tratamento de throttling do
+// batchWrite. Cada alimento sobrescreve apenas a propria chave food_id: itens
+// de outra origem (ex.: TACO) nao sao lidos nem alterados. Usado pela carga do
+// Open Food Facts (cmd/importoff).
+func (r *TacoRepository) PutFoodsBatch(ctx context.Context, foods []TacoFoodItem) error {
+	if len(foods) == 0 {
+		return nil
+	}
+
+	foodRequests := make([]types.WriteRequest, 0, len(foods))
+	tokenRequests := make([]types.WriteRequest, 0, len(foods)*6)
+	for _, f := range foods {
+		av, err := attributevalue.MarshalMap(f)
+		if err != nil {
+			return fmt.Errorf("erro ao serializar alimento %s: %w", f.FoodID, err)
+		}
+		foodRequests = append(foodRequests, types.WriteRequest{
+			PutRequest: &types.PutRequest{Item: av},
+		})
+
+		for _, ti := range buildFoodTokenItems(f) {
+			tav, err := attributevalue.MarshalMap(ti)
+			if err != nil {
+				return fmt.Errorf("erro ao serializar token do alimento %s: %w", f.FoodID, err)
+			}
+			tokenRequests = append(tokenRequests, types.WriteRequest{
+				PutRequest: &types.PutRequest{Item: tav},
+			})
+		}
+	}
+
+	if err := r.batchWrite(ctx, r.TableName, foodRequests); err != nil {
+		return err
+	}
+	return r.batchWrite(ctx, r.SearchTokensTableName, tokenRequests)
+}
+
 // batchWrite envia WriteRequests em lotes de 25, reprocessando os itens que o
 // DynamoDB devolver como UnprocessedItems com backoff exponencial (tabela
 // on-demand recem-criada costuma throttlar rajadas ate escalar a capacidade).
