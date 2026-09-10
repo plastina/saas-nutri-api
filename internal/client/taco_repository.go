@@ -43,8 +43,19 @@ func NewTacoRepository(db *dynamodb.Client, tableName, indexName string) *TacoRe
 	return &TacoRepository{DB: db, TableName: tableName, IndexName: indexName}
 }
 
+// diacriticReplacer remove acentos comuns do portugues para casar com o
+// campo normalized_name da base TACO, que e gravado sem acentos.
+var diacriticReplacer = strings.NewReplacer(
+	"á", "a", "à", "a", "â", "a", "ã", "a", "ä", "a",
+	"é", "e", "è", "e", "ê", "e", "ë", "e",
+	"í", "i", "ì", "i", "î", "i", "ï", "i",
+	"ó", "o", "ò", "o", "ô", "o", "õ", "o", "ö", "o",
+	"ú", "u", "ù", "u", "û", "u", "ü", "u",
+	"ç", "c", "ñ", "n",
+)
+
 func normalizeString(s string) string {
-	return strings.ToLower(strings.TrimSpace(s))
+	return diacriticReplacer.Replace(strings.ToLower(strings.TrimSpace(s)))
 }
 
 func (r *TacoRepository) SearchFoodsByNamePrefix(ctx context.Context, namePrefix string) ([]TacoFoodItem, error) {
