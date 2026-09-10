@@ -40,8 +40,44 @@ Swagger: `http://localhost:8080/swagger/index.html`
 ## Data Dependencies (DynamoDB)
 
 - Region configured in code: `sa-east-1`
-- Expected tables: `TacoFoods` and `HouseholdMeasures`
+- Expected tables: `TacoFoods`, `HouseholdMeasures` and `FoodSearchTokens`
 - Expected GSI: `FoodNameIndex`
+
+### `FoodSearchTokens` (word index for search)
+
+The food search matches the term against the prefix of **any word** of the food
+name, accent/case/punctuation insensitive (e.g. `requeij` finds
+`Queijo, requeijão, cremoso`). It must not `Scan` `TacoFoods`, so there is a
+dedicated index table, one row per distinct word of each food:
+
+| Attribute        | Type   | Role                                                        |
+| ---------------- | ------ | ---------------------------------------------------------- |
+| `token_pl`       | S      | Partition key — first letter of the token (`_` if not a-z) |
+| `tok`            | S      | Sort key — `<token>#<food_id>`                              |
+| `token`          | S      | Normalized word                                            |
+| `word_index`     | N      | Position of the word in the name (`0` = first word)         |
+| `food_id`        | S      | Food id in `TacoFoods`                                      |
+| `data_source`, `original_name`, `normalized_name`, `energy_kcal`, `protein_g`, `carbohydrate_g`, `fat_g`, `fiber_g` | — | Denormalized food fields so search resolves in a single `Query` |
+
+Search runs `token_pl = :p AND begins_with(tok, :t)`. Partitioning by first
+letter avoids a hot partition. Normalization/tokenization lives in
+`internal/client/normalize.go` (`NormalizeTokens`) and is used both when writing
+tokens and when searching, so they cannot diverge.
+
+Create the table with partition key `token_pl` (S) and sort key `tok` (S),
+on-demand billing, no GSI.
+
+### Backfill
+
+Every food write (`TacoRepository.PutFood`) also writes its token rows, so new
+foods are searchable immediately. To index foods that already exist in
+`TacoFoods`, run the backfill once after creating `FoodSearchTokens`:
+
+```bash
+go run ./cmd/backfill
+```
+
+It is idempotent (token keys are deterministic) — safe to re-run.
 
 ## Main Endpoints (base: /api)
 

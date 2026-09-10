@@ -75,7 +75,8 @@ func main() {
 
 	tacoTableName := "TacoFoods"
 	tacoIndexName := "FoodNameIndex"
-	tacoRepo := client.NewTacoRepository(dynamoClient, tacoTableName, tacoIndexName)
+	tacoSearchTokensTableName := "FoodSearchTokens"
+	tacoRepo := client.NewTacoRepository(dynamoClient, tacoTableName, tacoIndexName, tacoSearchTokensTableName)
 	log.Println("Repositório TACO (DynamoDB) inicializado.")
 
 
