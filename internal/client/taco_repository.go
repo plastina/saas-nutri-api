@@ -7,6 +7,7 @@ import (
 	"saas-nutri/internal/model"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -233,27 +234,38 @@ func (r *TacoRepository) PutFoodTokens(ctx context.Context, f TacoFoodItem) erro
 }
 
 // batchWrite envia WriteRequests em lotes de 25, reprocessando os itens que o
-// DynamoDB devolver como UnprocessedItems.
+// DynamoDB devolver como UnprocessedItems com backoff exponencial (tabela
+// on-demand recem-criada costuma throttlar rajadas ate escalar a capacidade).
 func (r *TacoRepository) batchWrite(ctx context.Context, table string, requests []types.WriteRequest) error {
-	const maxBatch = 25
+	const (
+		maxBatch    = 25
+		maxAttempts = 8
+	)
 	for start := 0; start < len(requests); start += maxBatch {
 		end := start + maxBatch
 		if end > len(requests) {
 			end = len(requests)
 		}
-		batch := map[string][]types.WriteRequest{table: requests[start:end]}
-		for attempt := 0; attempt < 5 && len(batch[table]) > 0; attempt++ {
-			out, err := r.DB.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{RequestItems: batch})
+		pending := requests[start:end]
+		for attempt := 0; len(pending) > 0; attempt++ {
+			if attempt == maxAttempts {
+				return fmt.Errorf("batch write em %s deixou %d itens nao processados apos %d tentativas", table, len(pending), maxAttempts)
+			}
+			if attempt > 0 {
+				wait := time.Duration(1<<uint(attempt-1)) * 100 * time.Millisecond
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(wait):
+				}
+			}
+			out, err := r.DB.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+				RequestItems: map[string][]types.WriteRequest{table: pending},
+			})
 			if err != nil {
 				return fmt.Errorf("erro no batch write em %s: %w", table, err)
 			}
-			if len(out.UnprocessedItems[table]) == 0 {
-				break
-			}
-			batch = out.UnprocessedItems
-		}
-		if len(batch[table]) > 0 {
-			return fmt.Errorf("batch write em %s deixou %d itens nao processados", table, len(batch[table]))
+			pending = out.UnprocessedItems[table]
 		}
 	}
 	return nil
