@@ -21,10 +21,14 @@ func NewFoodHandler(taco *client.TacoRepository) *FoodHandler {
 }
 
 func mapTacoToFood(tacoItem client.TacoFoodItem) model.Food {
+	source := tacoItem.DataSource
+	if source == "" {
+		source = "TACO"
+	}
 	return model.Food{
 		Id:            tacoItem.FoodID,
 		Name:          tacoItem.OriginalName,
-		Source:        "TACO",
+		Source:        source,
 		EnergyKcal:    tacoItem.EnergyKcal,
 		ProteinG:      tacoItem.ProteinG,
 		CarbohydrateG: tacoItem.CarbohydrateG,
