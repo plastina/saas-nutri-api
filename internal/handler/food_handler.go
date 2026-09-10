@@ -73,7 +73,7 @@ func (h *FoodHandler) SearchFoods(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	var mappedResults []model.Food
+	mappedResults := make([]model.Food, 0)
 
 	tacoResults, errTaco := h.tacoRepo.SearchFoodsByNamePrefix(ctx, searchTerm)
 	if errTaco != nil {
