@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -76,6 +77,7 @@ func (h *FoodHandler) SearchFoods(w http.ResponseWriter, r *http.Request) {
 
 	tacoResults, errTaco := h.tacoRepo.SearchFoodsByNamePrefix(ctx, searchTerm)
 	if errTaco != nil {
+		log.Printf("Erro ao buscar alimentos (search=%q): %v", searchTerm, errTaco)
 		RespondWithError(w, http.StatusInternalServerError, "Erro interno ao buscar dados dos alimentos")
 		return
 	}
